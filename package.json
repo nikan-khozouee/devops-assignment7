@@ -6,6 +6,7 @@
   "scripts": {
     "start-agent": "cd agent && npm start",
     "start-server": "cd server && npm start",
+    "start-monitor": "cd monitor && node index.js",
     "stop-all": "cd agent && npm stop && cd ../server && npm stop"
   },
   "repository": {
