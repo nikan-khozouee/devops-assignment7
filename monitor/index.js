@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
-const server = require('http').Server(app);
-const socket = require('socket.io');
+const httpServer = require('http').Server(app);
+const {Server} = require('socket.io');
 const { io } = require("socket.io-client");
 
 app.use(express.static('www'));
@@ -35,16 +35,21 @@ for (const server of servers) {
 // Monitor socket to send data to the dashboard front-end
 // ==================================================
 
-const monitorSocket = socket(server, {
-    transports: ['websocket']
+const monitorSocket = new Server(httpServer, {
+    transports: ['websocket'],
+    cors: {
+        origin: "https://example.com",
+        methods: ["GET", "POST"]
+    }
 });
-monitorSocket.sockets.on('connection', socket => {
-    const heatbeatInterval = setInterval(() => {
-        socket.emit('heatbeat', { servers });
+monitorSocket.on('connection', socket => {
+    console.log('Monitoring dashboard connected');
+    const heartbeatInterval = setInterval(() => {
+        socket.emit('heartbeat', { servers });
     }, 1000);
 
     socket.on('disconnect', () => {
-        clearInterval(heatbeatInterval);
+        clearInterval(heartbeatInterval);
     });
 });
 
@@ -71,7 +76,8 @@ function updateHealth(server) {
 
     server.status = score2color(score / 4);
 
-    console.log(`${server.name} ${score}`);
+    // console.log(`${server.name} ${score}`);
+    console.log(server.scoreTrend)
 
     // Add score to trend data.
     server.scoreTrend.push((4 - score));
@@ -89,6 +95,6 @@ function score2color(score) {
 
 // ==================================================
 
-app.listen(3000, () => {
+httpServer.listen(3000, () => {
     console.log('Example app listening on port 3000!');
 });
