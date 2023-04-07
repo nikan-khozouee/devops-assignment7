@@ -1,0 +1,22 @@
+{
+  "name": "monitoring",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start-agent": "cd agent && npm start",
+    "start-server": "cd server && npm start",
+    "stop-all": "cd agent && npm stop && cd ../server && npm stop"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/csc-devops-s23/monitoring.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/csc-devops-s23/monitoring/issues"
+  },
+  "homepage": "https://github.com/csc-devops-s23/monitoring#readme"
+}
