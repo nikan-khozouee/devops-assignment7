@@ -40,7 +40,6 @@ $(document).ready(function () {
     const host = `${window.location.hostname}:3000`;
     console.log(`Connecting to ${host}`);
     var socket = io(host, {
-        upgrade: false,
         transports: ['websocket']
     });
 
@@ -48,7 +47,7 @@ $(document).ready(function () {
 
     socket.on("heartbeat", (heartbeat) => {
         console.log(JSON.stringify(heartbeat));
-        table.clients = heartbeat;
-        statusBars.clients = heartbeat;
+        table.clients = heartbeat.servers;
+        statusBars.clients = heartbeat.servers;
     });
 });
