@@ -61,7 +61,7 @@ monitorSocket.on('connection', socket => {
 for (const server of servers) {
     // check latency
     // set server.latency
-    // set server.status
+    // set server.statusCode
 }
 
 
