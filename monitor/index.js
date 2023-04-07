@@ -8,10 +8,10 @@ app.use(express.static('www'));
 
 // TODO: update with IP addresses of your servers
 const servers = [
-    { name: "computer", status: "#cccccc", scoreTrend: [] },
-    { name: "server-01", url: `http://localhost`, status: "#cccccc", scoreTrend: [0] },
-    { name: "server-02", url: `http://localhost`, status: "#cccccc", scoreTrend: [0] },
-    { name: "server-03", url: `http://localhost`, status: "#cccccc", scoreTrend: [0] }
+    { name: "computer", url: `http://localhost`, status: "#cccccc", scoreTrend: [] },
+    { name: "server-01", url: `http://server-01`, status: "#cccccc", scoreTrend: [0] },
+    { name: "server-02", url: `http://server-02`, status: "#cccccc", scoreTrend: [0] },
+    { name: "server-03", url: `http://server-03`, status: "#cccccc", scoreTrend: [0] }
 ];
 
 // ==================================================
