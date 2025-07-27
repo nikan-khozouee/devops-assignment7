@@ -8,7 +8,7 @@ app.use(express.static('www'));
 
 // TODO: update these if you used different ports!
 const servers = [
-    { name: "computer", url: `http://localhost`, port: 5005, status: "#cccccc", scoreTrend: [] },
+    // { name: "computer", url: `http://localhost`, port: 5005, status: "#cccccc", scoreTrend: [] }, // you can also monitor your local machine
     { name: "server-01", url: `http://localhost`, port: 5001, status: "#cccccc", scoreTrend: [0] },
     { name: "server-02", url: `http://localhost`, port: 5002, status: "#cccccc", scoreTrend: [0] },
     { name: "server-03", url: `http://localhost`, port: 5003, status: "#cccccc", scoreTrend: [0] }
