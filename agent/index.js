@@ -1,16 +1,27 @@
-const os = require('os');
-const si = require('systeminformation');
+const fs = require('fs').promises;
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
 class Agent {
+    constructor() {
+        this.lastCpuCheck = Date.now();
+        this.lastCpuUsage = 0;
+    }
+    
     async memoryLoad() {
-        console.log('memoryLoad', os.totalmem(), os.freemem());
-        return 10;
+        // TODO: calculate memory load
+        // see:
+        // /sys/fs/cgroup/memory.current
+        // /sys/fs/cgroup/memory.max
+
+        return 20;
     }
 
     async cpuLoad() {
-        return 10;
+        // TODO: calculate cpu load
+        // see: cpu_usage_usec in /sys/fs/cgroup/cpu.stat which is cpu time in microseconds
+
+        return 20;
     }
     
     // TODO: other metrics
@@ -28,7 +39,7 @@ io.on('connection', (socket) => {
     setInterval(async () => {
         const memoryLoad = await agent.memoryLoad();
         const cpuLoad = await agent.cpuLoad();
-        // console.log({ memoryLoad, cpuLoad });
+        console.log({ memoryLoad, cpuLoad });
         socket.emit('monitoring-stats', { memoryLoad, cpuLoad });
     }, 1000);
 });
