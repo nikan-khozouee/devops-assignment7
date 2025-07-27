@@ -8,10 +8,10 @@ app.use(express.static('www'));
 
 // TODO: update with IP addresses of your servers
 const servers = [
-    { name: "computer", url: `http://localhost`, status: "#cccccc", scoreTrend: [] },
-    { name: "server-01", url: `http://server-01`, status: "#cccccc", scoreTrend: [0] },
-    { name: "server-02", url: `http://server-02`, status: "#cccccc", scoreTrend: [0] },
-    { name: "server-03", url: `http://server-03`, status: "#cccccc", scoreTrend: [0] }
+    { name: "computer", url: `http://localhost`, port: 5005, status: "#cccccc", scoreTrend: [] },
+    { name: "server-01", url: `http://server-01`, port: 5001, status: "#cccccc", scoreTrend: [0] },
+    { name: "server-02", url: `http://server-02`, port: 5002, status: "#cccccc", scoreTrend: [0] },
+    { name: "server-03", url: `http://server-03`, port: 5003, status: "#cccccc", scoreTrend: [0] }
 ];
 
 // ==================================================
@@ -19,7 +19,7 @@ const servers = [
 // ==================================================
 
 for (const server of servers) {
-    const agentSocket = io(server.url + ':5001', { transports: ['websocket'] })
+    const agentSocket = io(server.url + ':' + server.port, { transports: ['websocket'] })
     console.log('Server connected:', server.name);
     agentSocket.on('monitoring-stats', async (data) => {
         console.log('monitoring-stats', data);
