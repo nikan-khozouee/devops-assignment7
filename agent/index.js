@@ -19,7 +19,11 @@ class Agent {
 
     async cpuLoad() {
         // TODO: calculate cpu load
-        // see: cpu_usage_usec in /sys/fs/cgroup/cpu.stat which is cpu time in microseconds
+        // to calculate CPU load:
+        // 1. read usage_usec value from /sys/fs/cgroup/cpu.stat this is cpu time in microseconds
+        // 2. store usage_usec on each run of cpuLoad() and calculate how much is increased since last run (you can store it in this.lastCpuUsage)
+        // 3. store and calculate time since last time cpuLoad() was called (you can store timestamps from Date.now() and calculate the time difference)
+        // 4. calculate the cpu load percentage as (usage_usec changes since last run / time since last run in seconds) * 100
 
         return 20;
     }
