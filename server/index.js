@@ -24,6 +24,6 @@ app.get('/max-load', (req, res) => {
 // ensure stress-ng is installed
 spawnSync('apk update && apk add -y stress-ng', { shell: true });
 
-app.listen(process.env.PORT || 80, () => {
-    console.log('Server listening on port 3001!');
+app.listen(process.env.SERVER_PORT || 4001, () => {
+    console.log('Server listening on port ' + process.env.SERVER_PORT || 4001 + '!');
 });

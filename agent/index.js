@@ -44,6 +44,6 @@ io.on('connection', (socket) => {
     }, 1000);
 });
 
-httpServer.listen(5001, () => {
-    console.log('Agent listening on port 5001!');
+httpServer.listen(process.env.AGENT_PORT || 5001, () => {
+    console.log('Agent listening on port ' + process.env.AGENT_PORT || 5001 + '!');
 });
