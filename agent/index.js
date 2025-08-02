@@ -9,23 +9,56 @@ class Agent {
     }
     
     async memoryLoad() {
-        // TODO: calculate memory load
-        // see:
-        // /sys/fs/cgroup/memory.current
-        // /sys/fs/cgroup/memory.max
-
-        return 20;
+        try {
+            const current = await fs.readFile('/sys/fs/cgroup/memory.current', 'utf8');
+            const max = await fs.readFile('/sys/fs/cgroup/memory.max', 'utf8');
+            
+            const currentBytes = parseInt(current.trim());
+            const maxBytes = parseInt(max.trim());
+            
+            const percentage = Math.round((currentBytes / maxBytes) * 100);
+            return percentage;
+        } catch (error) {
+            console.error('Error reading memory stats:', error);
+            return 0;
+        }
     }
 
     async cpuLoad() {
-        // TODO: calculate cpu load
-        // to calculate CPU load:
-        // 1. read usage_usec value from /sys/fs/cgroup/cpu.stat this is cpu time in microseconds
-        // 2. store usage_usec on each run of cpuLoad() and calculate how much is increased since last run (you can store it in this.lastCpuUsage)
-        // 3. store and calculate time since last time cpuLoad() was called (you can store timestamps from Date.now() and calculate the time difference)
-        // 4. calculate the cpu load percentage as (usage_usec changes since last run / time since last run in seconds) * 100
-
-        return 20;
+        try {
+            const cpuStatContent = await fs.readFile('/sys/fs/cgroup/cpu.stat', 'utf8');
+            const lines = cpuStatContent.trim().split('\n');
+            
+            let currentUsageUsec = 0;
+            for (const line of lines) {
+                if (line.startsWith('usage_usec ')) {
+                    currentUsageUsec = parseInt(line.split(' ')[1]);
+                    break;
+                }
+            }
+            
+            const currentTime = Date.now();
+            
+            if (this.lastCpuUsage === 0) {
+                this.lastCpuUsage = currentUsageUsec;
+                this.lastCpuCheck = currentTime;
+                return 0;
+            }
+            
+            const usageIncrease = currentUsageUsec - this.lastCpuUsage;
+            const timeIncreaseMs = currentTime - this.lastCpuCheck;
+            const timeIncreaseUsec = timeIncreaseMs * 1000; //convert millisecond to microsecond
+            
+            const cpuPercentage = Math.round((usageIncrease / timeIncreaseUsec) * 100);
+            
+            this.lastCpuUsage = currentUsageUsec;
+            this.lastCpuCheck = currentTime;
+            
+            return Math.max(0, Math.min(100, cpuPercentage));
+        } catch (error) {
+            console.error('Error reading CPU stats:', error);
+            return 0;
+        }
     }
     
     // TODO: other metrics
