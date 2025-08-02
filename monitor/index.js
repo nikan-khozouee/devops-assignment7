@@ -8,10 +8,10 @@ app.use(express.static('www'));
 
 // TODO: update these if you used different ports!
 const servers = [
-    // { name: "computer", url: `http://localhost`, port: 5005, status: "#cccccc", scoreTrend: [] }, // you can also monitor your local machine
-    { name: "server-01", url: `http://localhost`, port: 5001, status: "#cccccc", scoreTrend: [0] },
-    { name: "server-02", url: `http://localhost`, port: 5002, status: "#cccccc", scoreTrend: [0] },
-    { name: "server-03", url: `http://localhost`, port: 5003, status: "#cccccc", scoreTrend: [0] }
+    // { name: "computer", url: `http://localhost`, port: 5005, serverPort: 4005, status: "#cccccc", scoreTrend: [] }, // you can also monitor your local machine
+    { name: "server-01", url: `http://localhost`, port: 5001, serverPort: 4001, status: "#cccccc", scoreTrend: [0] },
+    { name: "server-02", url: `http://localhost`, port: 5002, serverPort: 4002, status: "#cccccc", scoreTrend: [0] },
+    { name: "server-03", url: `http://localhost`, port: 5003, serverPort: 4003, status: "#cccccc", scoreTrend: [0] }
 ];
 
 // ==================================================
@@ -57,12 +57,25 @@ monitorSocket.on('connection', socket => {
 // Latency calculation
 // ==================================================
 
-// TODO:
-for (const server of servers) {
-    // check latency
-    // set server.latency
-    // set server.statusCode
+async function checkServerHealth() {
+    for (const server of servers) {
+        try {
+            const startTime = Date.now();
+            const response = await fetch(`${server.url}:${server.serverPort}/`);
+            const endTime = Date.now();
+            
+            server.latency = endTime - startTime;
+            server.statusCode = response.status;
+        } catch (error) {
+            server.latency = -1; // Indicates server unreachable
+            server.statusCode = 0; // No response
+        }
+    }
 }
+
+// Check server health every 5 seconds
+setInterval(checkServerHealth, 5000);
+checkServerHealth(); // Initial check
 
 
 // ==================================================
@@ -72,7 +85,43 @@ for (const server of servers) {
 // TODO:
 function updateHealth(server) {
     let score = 0;
-    // Update score calculation.
+    
+    // CPU Load scoring (0-1 points)
+    if (server.cpuLoad !== undefined) {
+        if (server.cpuLoad <= 50) score += 1;
+        else if (server.cpuLoad <= 75) score += 0.5;
+        // 0 points if CPU > 75%
+    }
+    
+    // Memory Load scoring (0-1 points)
+    if (server.memoryLoad !== undefined) {
+        if (server.memoryLoad <= 70) score += 1;
+        else if (server.memoryLoad <= 85) score += 0.5;
+        // 0 points if Memory > 85%
+    }
+    
+    // Latency scoring (0-1 points)
+    if (server.latency !== undefined) {
+        if (server.latency === -1) {
+            // Server unreachable
+            score += 0;
+        } else if (server.latency <= 100) {
+            score += 1;
+        } else if (server.latency <= 500) {
+            score += 0.5;
+        }
+        // 0 points if latency > 500ms
+    }
+    
+    // Status Code scoring (0-1 points)
+    if (server.statusCode !== undefined) {
+        if (server.statusCode >= 200 && server.statusCode < 300) {
+            score += 1; // Success responses
+        } else if (server.statusCode >= 300 && server.statusCode < 500) {
+            score += 0.5; // Redirects or client errors
+        }
+        // 0 points for server errors (5xx) or no response (0)
+    }
 
     server.status = score2color(score / 4);
 
