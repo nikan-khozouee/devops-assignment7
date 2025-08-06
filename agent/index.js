@@ -61,6 +61,75 @@ class Agent {
         }
     }
     
+    async uptime() {
+        try {
+            // Find process by server port
+            const serverPort = process.env.SERVER_PORT || 4001;
+            const { spawn } = require('child_process');
+            
+            return new Promise((resolve) => {
+                const lsof = spawn('lsof', ['-ti', `:${serverPort}`]);
+                let pid = '';
+                lsof.stdout.on('data', (data) => {
+                    pid += data.toString();
+                });
+                lsof.on('close', () => {
+                    const serverPid = pid.trim();
+                    if (!serverPid) {
+                        resolve(0);
+                        return;
+                    }
+                    
+                    // Get process uptime using ps
+                    const ps = spawn('ps', ['-o', 'etime=', '-p', serverPid]);
+                    let output = '';
+                    ps.stdout.on('data', (data) => {
+                        output += data.toString();
+                    });
+                    ps.on('close', () => {
+                        const etime = output.trim();
+                        if (etime) {
+                            // Convert etime format to seconds
+                            const parts = etime.split(':').map(Number);
+                            let seconds = 0;
+                            if (parts.length === 3) { // HH:MM:SS
+                                seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                            } else if (parts.length === 2) { // MM:SS
+                                seconds = parts[0] * 60 + parts[1];
+                            }
+                            resolve(seconds);
+                        } else {
+                            resolve(0);
+                        }
+                    });
+                });
+            });
+        } catch (error) {
+            console.error('Error reading uptime:', error);
+            return 0;
+        }
+    }
+
+    async requestsPerSecond() {
+        try {
+            const content = await fs.readFile('/tmp/server_requests', 'utf8');
+            const [requestCount, timestamp] = content.trim().split(',');
+            
+            const fileTimestamp = parseInt(timestamp);
+            const now = Date.now();
+            
+            // Check if file is stale (older than 3 seconds)
+            if (now - fileTimestamp > 3000) {
+                return -1; // Indicates server down/stale data
+            }
+            
+            return parseInt(requestCount) || 0;
+        } catch (error) {
+            // File doesn't exist or can't read = server down
+            return -1;
+        }
+    }
+
     // TODO: other metrics
 }
 
@@ -76,8 +145,10 @@ io.on('connection', (socket) => {
     setInterval(async () => {
         const memoryLoad = await agent.memoryLoad();
         const cpuLoad = await agent.cpuLoad();
-        console.log({ memoryLoad, cpuLoad });
-        socket.emit('monitoring-stats', { memoryLoad, cpuLoad });
+        const uptime = await agent.uptime();
+        const requestsPerSecond = await agent.requestsPerSecond();
+        console.log({ memoryLoad, cpuLoad, uptime, requestsPerSecond });
+        socket.emit('monitoring-stats', { memoryLoad, cpuLoad, uptime, requestsPerSecond });
     }, 1000);
 });
 

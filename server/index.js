@@ -2,6 +2,23 @@ const { spawn, spawnSync } = require('child_process');
 const express = require('express');
 const app = express();
 
+// Metrics tracking
+const fs = require('fs');
+let requestCount = 0;
+
+// Write request count and timestamp to file every second and reset counter
+setInterval(() => {
+    const timestamp = Date.now();
+    fs.writeFileSync('/tmp/server_requests', `${requestCount},${timestamp}`);
+    requestCount = 0;
+}, 1000);
+
+// Middleware to count requests
+app.use((req, res, next) => {
+    requestCount++;
+    next();
+});
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
 });

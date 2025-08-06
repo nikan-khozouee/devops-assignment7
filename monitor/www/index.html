@@ -50,6 +50,8 @@
                 <th>Memory %</th>
                 <th>Latency (ms)</th>
                 <th>HTTP</th>
+                <th>Uptime (s)</th>
+                <th>Req/s</th>
                 <th>Trend</th>
             </tr>
         </thead>
@@ -60,6 +62,8 @@
                 <td>{{client.memoryLoad}}</td>
                 <td>{{client.latency}}</td>
                 <td>{{client.statusCode}}</td>
+                <td>{{client.uptime}}</td>
+                <td>{{client.requestsPerSecond === -1 ? 'DOWN' : client.requestsPerSecond}}</td>
                 <td>
                     <div>
                         <trend :key="client.name" :data="client.scoreTrend" :stroke-width="4"

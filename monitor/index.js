@@ -27,6 +27,8 @@ for (const server of servers) {
         // update servers array to set this server status.
         server.memoryLoad = data.memoryLoad;
         server.cpuLoad = data.cpuLoad;
+        server.uptime = data.uptime;
+        server.requestsPerSecond = data.requestsPerSecond;
         updateHealth(server);
     });
 }
@@ -59,6 +61,9 @@ monitorSocket.on('connection', socket => {
 
 async function checkServerHealth() {
     for (const server of servers) {
+        server.statusCode = 0; // Default to unreachable
+        server.latency = -1; // Default to unreachable
+        
         try {
             const startTime = Date.now();
             const response = await fetch(`${server.url}:${server.serverPort}/`);
@@ -66,9 +71,9 @@ async function checkServerHealth() {
             
             server.latency = endTime - startTime;
             server.statusCode = response.status;
+            console.log(`${server.name} - SUCCESS: ${response.status}, latency: ${server.latency}ms`);
         } catch (error) {
-            server.latency = -1; // Indicates server unreachable
-            server.statusCode = 0; // No response
+            console.log(`${server.name} - ERROR: ${error.message}, statusCode remains 0`);
         }
     }
 }
