@@ -63,45 +63,67 @@ class Agent {
     
     async uptime() {
         try {
-            // Find process by server port
+            // Find process by server port using netstat
             const serverPort = process.env.SERVER_PORT || 4001;
             const { spawn } = require('child_process');
             
             return new Promise((resolve) => {
-                const lsof = spawn('lsof', ['-ti', `:${serverPort}`]);
-                let pid = '';
-                lsof.stdout.on('data', (data) => {
-                    pid += data.toString();
+                const netstat = spawn('netstat', ['-tlnp']);
+                let output = '';
+                netstat.stdout.on('data', (data) => {
+                    output += data.toString();
                 });
-                lsof.on('close', () => {
-                    const serverPid = pid.trim();
+                netstat.on('close', () => {
+                    const lines = output.split('\n');
+                    let serverPid = null;
+                    
+                    for (const line of lines) {
+                        if (line.includes(`:${serverPort} `) && line.includes('LISTEN')) {
+                            const match = line.match(/(\d+)\//);
+                            if (match) {
+                                serverPid = match[1];
+                                break;
+                            }
+                        }
+                    }
+                    
                     if (!serverPid) {
                         resolve(0);
                         return;
                     }
                     
-                    // Get process uptime using ps
-                    const ps = spawn('ps', ['-o', 'etime=', '-p', serverPid]);
-                    let output = '';
-                    ps.stdout.on('data', (data) => {
-                        output += data.toString();
-                    });
-                    ps.on('close', () => {
-                        const etime = output.trim();
-                        if (etime) {
-                            // Convert etime format to seconds
-                            const parts = etime.split(':').map(Number);
-                            let seconds = 0;
-                            if (parts.length === 3) { // HH:MM:SS
-                                seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-                            } else if (parts.length === 2) { // MM:SS
-                                seconds = parts[0] * 60 + parts[1];
-                            }
-                            resolve(seconds);
-                        } else {
+                    // Use /proc/PID/stat to get process start time
+                    fs.readFile(`/proc/${serverPid}/stat`, 'utf8')
+                        .then(statContent => {
+                            const fields = statContent.trim().split(' ');
+                            const starttime = parseInt(fields[21]); // Process start time in clock ticks
+                            
+                            // Get system clock ticks per second
+                            return fs.readFile('/proc/stat', 'utf8')
+                                .then(procStat => {
+                                    // Get system uptime
+                                    return fs.readFile('/proc/uptime', 'utf8')
+                                        .then(uptimeContent => {
+                                            const systemUptimeSeconds = parseFloat(uptimeContent.split(' ')[0]);
+                                            // Get clock ticks per second dynamically
+                                            const getconf = spawn('getconf', ['CLK_TCK']);
+                                            let clockTicks = '';
+                                            getconf.stdout.on('data', (data) => {
+                                                clockTicks += data.toString();
+                                            });
+                                            getconf.on('close', () => {
+                                                const clockTicksPerSecond = parseInt(clockTicks.trim()) || 100;
+                                                const processStartSeconds = starttime / clockTicksPerSecond;
+                                                const processUptimeSeconds = systemUptimeSeconds - processStartSeconds;
+                                                
+                                                resolve(Math.max(0, Math.floor(processUptimeSeconds)));
+                                            });
+                                        });
+                                });
+                        })
+                        .catch(() => {
                             resolve(0);
-                        }
-                    });
+                        });
                 });
             });
         } catch (error) {

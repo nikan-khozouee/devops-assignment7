@@ -50,7 +50,7 @@
                 <th>Memory %</th>
                 <th>Latency (ms)</th>
                 <th>HTTP</th>
-                <th>Uptime (s)</th>
+                <th>Uptime</th>
                 <th>Req/s</th>
                 <th>Trend</th>
             </tr>
@@ -62,7 +62,7 @@
                 <td>{{client.memoryLoad}}</td>
                 <td>{{client.latency}}</td>
                 <td>{{client.statusCode}}</td>
-                <td>{{client.uptime}}</td>
+                <td>{{formatUptime(client.uptime)}}</td>
                 <td>{{client.requestsPerSecond === -1 ? 'DOWN' : client.requestsPerSecond}}</td>
                 <td>
                     <div>
