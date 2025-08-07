@@ -75,6 +75,19 @@ cd ..
 npm run start-agent
 npm run start-server
 ```
+### On the local machine
+On the local machine, we will need to install the monitor dashboard. Let’s start by installing the dependencies and running monitor:
+
+```bash
+git clone https://github.com/nikan-khozouee/devops-assignment7
+cd devops-assignment7
+cd monitor
+npm install
+node index.js
+```
+
+Now you should be able to see a blank dashboard at http://localhost:3000.
+
 ## Questions
 ### discuss the results of the experiments and how your monitoring dashboard/metrics could help you detect the issues.
 A lot of my opinions are disscussed in the screencast below. But, I think combination of these metrics can give you a good idea to identify the problem. For example if cpu usage and memory usage are not capped but your request per second has dropped, you can start your investigation with the network state. Latancy also can help in this example.
