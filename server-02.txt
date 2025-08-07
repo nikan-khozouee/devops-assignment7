@@ -1,0 +1,18 @@
+docker run -dit --cap-add=NET_ADMIN --memory="1.0g" --cpus="1.0" --entrypoint sh --name server-02 --publish 4002:4001 --publish 5002:5001 node:alpine
+docker exec -it server-02 sh
+apk add git
+apk add stress-ng
+apk add iproute2 iptables coreutils
+
+
+git clone https://github.com/nikan-khozouee/devops-assignment7
+cd devops-assignment7
+cd agent
+npm install
+cd ..
+cd server
+npm install
+
+cd ..
+npm run start-agent
+npm run start-server
