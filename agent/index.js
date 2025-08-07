@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const pm2 = require('pm2');
+const pidusage = require('pidusage');
 
 class Agent {
     constructor() {
@@ -85,22 +86,17 @@ class Agent {
                     
                     const pid = serverProcess.pid;
                     
-                    // Read uptime directly from /proc
-                    fs.readFile(`/proc/${pid}/stat`, 'utf8')
-                        .then(stat => {
-                            const fields = stat.split(' ');
-                            const starttime = parseInt(fields[21]); // Process start time in clock ticks since boot
-                            return fs.readFile('/proc/uptime', 'utf8').then(uptimeData => {
-                                const systemUptime = parseFloat(uptimeData.split(' ')[0]); // System uptime in seconds
-                                const processStartSeconds = starttime / 100; // Convert clock ticks to seconds
-                                const processUptime = Math.floor(systemUptime - processStartSeconds);
-                                resolve(Math.max(0, processUptime));
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Error reading /proc files:', error);
-                            resolve(0);
-                        });
+                    // Use pidusage to get process uptime
+                    pidusage(pid, (err, stats) => {
+                        if (err) {
+                            console.error('Pidusage error:', err);
+                            return resolve(0);
+                        }
+                        
+                        // pidusage returns elapsed time in ms since process start
+                        const processUptimeSeconds = Math.floor(stats.elapsed / 1000);
+                        resolve(Math.max(0, processUptimeSeconds));
+                    });
                 });
             });
         });
