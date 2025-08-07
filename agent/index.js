@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const pm2 = require('pm2');
 
 class Agent {
     constructor() {
@@ -62,75 +63,48 @@ class Agent {
     }
     
     async uptime() {
-        try {
-            // Find process by server port using netstat
-            const serverPort = process.env.SERVER_PORT || 4001;
-            const { spawn } = require('child_process');
-            
-            return new Promise((resolve) => {
-                const netstat = spawn('netstat', ['-tlnp']);
-                let output = '';
-                netstat.stdout.on('data', (data) => {
-                    output += data.toString();
-                });
-                netstat.on('close', () => {
-                    const lines = output.split('\n');
-                    let serverPid = null;
-                    
-                    for (const line of lines) {
-                        if (line.includes(`:${serverPort} `) && line.includes('LISTEN')) {
-                            const match = line.match(/(\d+)\//);
-                            if (match) {
-                                serverPid = match[1];
-                                break;
-                            }
-                        }
+        return new Promise((resolve) => {
+            pm2.connect(err => {
+                if (err) {
+                    console.error('PM2 connect error:', err);
+                    return resolve(0);
+                }
+                
+                pm2.list((err, list) => {
+                    pm2.disconnect();
+                    if (err) {
+                        console.error('PM2 list error:', err);
+                        return resolve(0);
                     }
                     
-                    if (!serverPid) {
-                        resolve(0);
-                        return;
+                    const serverProcess = list.find(p => p.name === 'server');
+                    if (!serverProcess || !serverProcess.pid) {
+                        console.error('Server process not found');
+                        return resolve(0);
                     }
                     
-                    // Use /proc/PID/stat to get process start time
-                    fs.readFile(`/proc/${serverPid}/stat`, 'utf8')
-                        .then(statContent => {
-                            const fields = statContent.trim().split(' ');
-                            const starttime = parseInt(fields[21]); // Process start time in clock ticks
-                            
-                            // Get system clock ticks per second
-                            return fs.readFile('/proc/stat', 'utf8')
-                                .then(procStat => {
-                                    // Get system uptime
-                                    return fs.readFile('/proc/uptime', 'utf8')
-                                        .then(uptimeContent => {
-                                            const systemUptimeSeconds = parseFloat(uptimeContent.split(' ')[0]);
-                                            // Get clock ticks per second dynamically
-                                            const getconf = spawn('getconf', ['CLK_TCK']);
-                                            let clockTicks = '';
-                                            getconf.stdout.on('data', (data) => {
-                                                clockTicks += data.toString();
-                                            });
-                                            getconf.on('close', () => {
-                                                const clockTicksPerSecond = parseInt(clockTicks.trim()) || 100;
-                                                const processStartSeconds = starttime / clockTicksPerSecond;
-                                                const processUptimeSeconds = systemUptimeSeconds - processStartSeconds;
-                                                
-                                                resolve(Math.max(0, Math.floor(processUptimeSeconds)));
-                                            });
-                                        });
-                                });
+                    const pid = serverProcess.pid;
+                    
+                    // Read uptime directly from /proc
+                    fs.readFile(`/proc/${pid}/stat`, 'utf8')
+                        .then(stat => {
+                            const fields = stat.split(' ');
+                            const starttime = parseInt(fields[21]); // Process start time in clock ticks since boot
+                            return fs.readFile('/proc/uptime', 'utf8').then(uptimeData => {
+                                const systemUptime = parseFloat(uptimeData.split(' ')[0]); // System uptime in seconds
+                                const processStartSeconds = starttime / 100; // Convert clock ticks to seconds
+                                const processUptime = Math.floor(systemUptime - processStartSeconds);
+                                resolve(Math.max(0, processUptime));
+                            });
                         })
-                        .catch(() => {
+                        .catch(error => {
+                            console.error('Error reading /proc files:', error);
                             resolve(0);
                         });
                 });
             });
-        } catch (error) {
-            console.error('Error reading uptime:', error);
-            return 0;
-        }
-    }
+        });
+    }   
 
     async requestsPerSecond() {
         try {
