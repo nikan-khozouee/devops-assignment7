@@ -75,7 +75,7 @@ cd ..
 npm run start-agent
 npm run start-server
 ```
-### On the local machine
+#### On the local machine
 On the local machine, we will need to install the monitor dashboard. Let’s start by installing the dependencies and running monitor:
 
 ```bash
